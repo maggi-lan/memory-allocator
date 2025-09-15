@@ -10,22 +10,36 @@ A simple **64 KB memory allocator** implemented in C++ to simulate how `malloc` 
   - **Coalescing** adjacent free chunks to reduce fragmentation.
 - Fixed-size heap (`64 KB`) represented as a byte array.
 
+## Logic
+- **MEMORY**
+  - `bytes` is an array of 2<sup>16</sup> bytes and this will simulate the heap space.
+  - This array will be divided into **memory chunks** with each chunk having a header (of size 9 bytes).
+  - The header acts as a DLL node and the free chunks are kept track of as a DLL of headers.
+  - **NOTE**: `avail` = head node of the DLL.
+- **ALLOCATION**
+  - When `myalloc` is called, linear search is implemented on the DLL to find a chunk whose size is equal to or more than the required size.
+  - If a chunk roughly fits the required size, the node is removed from the DLL and the address of the chunk is returned.
+  - If a chunk is too big, the chunk is split into two.
+  - The address of the perfectly sized chunk is returned while the DLL is updated with the other chunk.
+  - **NOTE**: allocated chunks aren't tracked explicitly since a chunk is not free if it isn't in the list.
+- **FREEING**
+  - When `myfree` is called, the chunk header is added back to the DLL.
+  - Merging of free chunks which are contiguous in `bytes` might occur with the help of `coalesce()`.
+  - Coalescing helps to deal with fragmentation of memory.
+
 ## Time Complexity
-- **Allocation (`myalloc`)** → `O(n)` (linear search through available chunks).  
+- **Allocation (`myalloc`)** → `O(n)` (linear search through available chunks).
 - **Freeing (`myfree`)** → `O(1)` (direct insertion into free list + possible coalescing).
 
 ## Design Choices
-- **Array indices instead of raw pointers**  
-  - Each node in the DLL stores indices (`uint16_t`) instead of pointers (`void*`).  
-  - This saves **6 bytes per node** (on 64-bit systems: pointer = 8 bytes vs index = 2 bytes).  
+- **Array indices instead of raw pointers**
+  - Each node in the DLL stores indices (`uint16_t`) instead of pointers (`void*`).
+  - This saves **12 bytes per node**
   - For a large number of chunks, this significantly reduces overhead.
 
-- **Packed struct for metadata**  
-  - `__attribute__((packed))` removes compiler padding, keeping chunk metadata compact.  
+- **Packed struct for metadata**
+  - `__attribute__((packed))` removes compiler padding, keeping chunk metadata compact.
   - Metadata size = **9 bytes per chunk** (`size`, `leftSize`, `vacancy`, `next`, `prev`).
-
-- **DLL Head = Available List**  
-  - Free chunks are tracked using a DLL, with head pointing to the first free block.
 
 ## Limitations
 - Limited memory space - `64 KB`.
@@ -33,8 +47,8 @@ A simple **64 KB memory allocator** implemented in C++ to simulate how `malloc` 
 - For educational purposes only (not production ready).
 
 ## Future Scope
-- Replace linear search with a **hashmap or balanced tree** for `O(1)` or `O(log n)` allocation.   
-- Expand heap beyond 64 KB.  
+- Replace linear search with a **hashmap or balanced tree** for `O(1)` or `O(log n)` allocation.
+- Expand heap beyond 64 KB.
 
 ## How to Run
 ```bash
